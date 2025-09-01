@@ -521,3 +521,35 @@ header h1 {
 .toast--closing{
   animation: toast-out .3s ease-in forwards !important;
 }
+
+.op-delete { text-align: right; }
+
+.btn-danger{
+  background:#dc3545; color:#fff;
+  border:none; padding:6px 12px;
+  border-radius:4px; cursor:pointer;
+}
+.btn-danger[disabled]{ opacity:.55; cursor:not-allowed; }
+
+/* 操作列的下拉+按钮横向对齐 */
+form[method="post"] {
+  margin: 4px 0;
+}
+
+.op-delete {
+  text-align: center;   /* 居中显示，不再紧贴右边 */
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-danger[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+

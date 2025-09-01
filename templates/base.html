@@ -81,7 +81,7 @@
           <button type="submit" class="browse-btn">保存资料</button>
         </form>
 
-        <!-- 修改密码 -->zhi
+        <!-- 修改密码 -->
         <form method="post" action="{{ url_for('users.change_password') }}">
           <div class="input-group" style="margin-bottom:10px;">
             <label for="old_password">旧密码</label>
@@ -133,49 +133,66 @@
 
         <!-- 用户列表 -->
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>用户名</th>
-              <th>邮箱</th>
-              <th>角色</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for u in users or [] %}
-            <tr>
-              <td>{{ u.id }}</td>
-              <td>{{ u.username }}</td>
-              <td>{{ u.email }}</td>
-              <td>{{ u.roles | map(attribute='name') | join(', ') }}</td>
-              <td>
-                <!-- 赋权 -->
-                <form method="post" action="{{ url_for('admin.grant', uid=u.id) }}" style="display:inline;">
-                  <select name="role">
-                    {% for r in roles or [] %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
-                  </select>
-                  <button class="page-btn" style="margin-left:6px;">赋权</button>
-                </form>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>用户名</th>
+      <th id="base_email_col">邮箱</th>
+      <th>角色</th>
+      <th id="base_conduct_col">操作</th>
+      <th id="base_delete_col">删除</th>  <!-- 新增列 -->
+    </tr>
+  </thead>
+  <tbody>
+  {% for u in users or [] %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.roles | map(attribute='name') | join(', ') }}</td>
 
-                <!-- 回收 -->
-                <form method="post" action="{{ url_for('admin.revoke', uid=u.id) }}" style="display:inline; margin-left:6px;">
-                  <select name="role">
-                    {% for r in roles or [] %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
-                  </select>
-                  <button class="page-btn">回收</button>
-                </form>
+      <!-- 原有“操作”列 -->
+      <td>
+        <!-- 赋权 -->
+          <form method="post" action="{{ url_for('admin.grant', uid=u.id) }}" style="display:inline-flex; align-items:center; margin-right:8px;">
+            <select name="role">
+              {% for r in roles or [] %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+            </select>
+            <button class="page-btn" style="margin-left:6px;">赋权</button>
+          </form>
 
-                <!-- 重置密码 -->
-                <form method="post" action="{{ url_for('admin.reset', uid=u.id) }}" style="display:inline; margin-left:6px;">
-                  <input name="new_password" placeholder="新密码">
-                  <button class="page-btn">重置密码</button>
-                </form>
-              </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+          <!-- 回收 -->
+          <form method="post" action="{{ url_for('admin.revoke', uid=u.id) }}" style="display:inline-flex; align-items:center; margin-right:8px;">
+            <select name="role">
+              {% for r in roles or [] %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+            </select>
+            <button class="page-btn" style="margin-left:6px;">回收</button>
+          </form>
+
+        <!-- 重置密码 -->
+        <form method="post" action="{{ url_for('admin.reset', uid=u.id) }}" style="display:inline-flex; margin-left:6px;">
+          <input name="new_password" placeholder="新密码">
+          <button class="page-btn">重置密码</button>
+        </form>
+      </td>
+
+      <!-- 新增“删除”列（独立一列，靠右对齐） -->
+        <td class="op-delete">
+          <form method="post"
+                action="{{ url_for('admin.delete', uid=u.id) }}"
+                onsubmit="return confirm('确认删除用户 {{ u.username }} ？');">
+            <button type="submit"
+                    class="btn-danger"
+                    {% if u.id == current_user.id %}disabled title="不能删除自己"{% endif %}>
+              删除用户
+            </button>
+          </form>
+        </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
       </section>
       {% endif %}
     </div>
