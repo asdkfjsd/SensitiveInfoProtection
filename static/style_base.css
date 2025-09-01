@@ -467,89 +467,107 @@ header h1 {
 }
 
 /* 顶部右侧堆叠容器 */
-.toast-stack{
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.toast-stack {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 /* 基础 toast 外观 */
-.toast{
-  min-width: 240px;
-  max-width: 420px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.12);
-  font-size: 14px;
-  line-height: 1.4;
-  background: #f5f5f5;
-  color: #333;
-  border-left: 4px solid #888;
+.toast {
+    min-width: 240px;
+    max-width: 420px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+    font-size: 14px;
+    line-height: 1.4;
+    background: #f5f5f5;
+    color: #333;
+    border-left: 4px solid #888;
 
-  /* 动画：进入时上移淡入，3.2s 后开始淡出 */
-  opacity: 0;
-  transform: translateY(-10px);
-  animation: toast-in .25s ease-out forwards,
-             toast-out .3s ease-in 3.2s forwards;
+    /* 动画：进入时上移淡入，3.2s 后开始淡出 */
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: toast-in .25s ease-out forwards,
+    toast-out .3s ease-in 3.2s forwards;
 }
 
 /* 成功/错误配色 */
-.toast.success{
-  background: #eaffef;
-  border-left-color: #16a34a;
-  color: #065f46;
+.toast.success {
+    background: #eaffef;
+    border-left-color: #16a34a;
+    color: #065f46;
 }
-.toast.error{
-  background: #ffe8e6;
-  border-left-color: #dc2626;
-  color: #7f1d1d;
+
+.toast.error {
+    background: #ffe8e6;
+    border-left-color: #dc2626;
+    color: #7f1d1d;
 }
 
 /* 进入、退出动画 */
-@keyframes toast-in{
-  to{ opacity:1; transform: translateY(0); }
+@keyframes toast-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-@keyframes toast-out{
-  to{ opacity:0; transform: translateY(-8px); }
+
+@keyframes toast-out {
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
 }
 
 /* 可选：JS 触发的快速收起态 */
-.toast--closing{
-  animation: toast-out .3s ease-in forwards !important;
-}
-
-.op-delete { text-align: right; }
-
-.btn-danger{
-  background:#dc3545; color:#fff;
-  border:none; padding:6px 12px;
-  border-radius:4px; cursor:pointer;
-}
-.btn-danger[disabled]{ opacity:.55; cursor:not-allowed; }
-
-/* 操作列的下拉+按钮横向对齐 */
-form[method="post"] {
-  margin: 4px 0;
+.toast--closing {
+    animation: toast-out .3s ease-in forwards !important;
 }
 
 .op-delete {
-  text-align: center;   /* 居中显示，不再紧贴右边 */
+    text-align: right;
 }
 
 .btn-danger {
-  background: #dc3545;
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
 }
+
 .btn-danger[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+/* 操作列的下拉+按钮横向对齐 */
+form[method="post"] {
+    margin: 4px 0;
+}
+
+.op-delete {
+    text-align: center; /* 居中显示，不再紧贴右边 */
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 

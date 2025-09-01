@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
 from ext import db
 
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -20,8 +21,11 @@ class User(UserMixin, db.Model):
     )
 
     def set_password(self, p: str): self.password_hash = bcrypt.hash(p)
+
     def check_password(self, p: str) -> bool: return bcrypt.verify(p, self.password_hash)
+
     def has_role(self, name: str) -> bool: return any(r.name == name for r in self.roles)
+
 
 class Role(db.Model):
     __tablename__ = "roles"
@@ -32,12 +36,14 @@ class Role(db.Model):
         "User", secondary="user_roles", back_populates="roles"
     )
 
+
 class UserRole(db.Model):
     __tablename__ = "user_roles"
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     __table_args__ = (UniqueConstraint("user_id", "role_id"),)
+
 
 class ResetToken(db.Model):
     __tablename__ = "reset_tokens"
@@ -47,6 +53,7 @@ class ResetToken(db.Model):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     used: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class LoginLog(db.Model):
     __tablename__ = "login_logs"

@@ -15,13 +15,17 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
 )
 
-db.init_app(app); login_manager.init_app(app); migrate.init_app(app, db)
+db.init_app(app);
+login_manager.init_app(app);
+migrate.init_app(app, db)
 app.register_blueprint(auth_bp)
 app.register_blueprint(users_bp)
 app.register_blueprint(admin_bp)
 
+
 @login_manager.user_loader
 def load_user(uid): return db.session.get(User, int(uid))
+
 
 @app.get("/")
 @login_required
@@ -32,20 +36,22 @@ def dashboard():
         roles = Role.query.all()
     return render_template("base.html", users=users, roles=roles)
 
+
 # 初始化命令：建表 + 种子管理员与角色
 @app.cli.command("seed")
 def seed():
     db.create_all()
     admin = Role.query.filter_by(name="admin").first() or Role(name="admin", desc="管理员")
     userr = Role.query.filter_by(name="user").first() or Role(name="user", desc="普通用户")
-    db.session.add_all([admin, userr]); db.session.commit()
+    db.session.add_all([admin, userr]);
+    db.session.commit()
     if not User.query.filter_by(username="admin").first():
         u = User(username="admin", email="admin@local")
         u.set_password("Admin123!")
         u.roles.append(admin)
-        db.session.add(u); db.session.commit()
+        db.session.add(u);
+        db.session.commit()
         print("admin 账户已创建：用户名 admin / 密码 Admin123!")
-
 
 
 with app.app_context():

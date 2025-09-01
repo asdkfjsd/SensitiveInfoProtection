@@ -5,8 +5,10 @@ from models import User, Role, ResetToken, LoginLog
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
+
 def require_admin():
     return current_user.is_authenticated and current_user.has_role("admin")
+
 
 @admin_bp.before_request
 def guard():
@@ -14,32 +16,39 @@ def guard():
         from flask import abort
         abort(403)
 
+
 @admin_bp.get("/users")
 def users_list():
     return render_template("admin_users.html",
                            users=User.query.all(),
                            roles=Role.query.all())
 
+
 @admin_bp.post("/users/create")
 def create_user():
     u = User(username=request.form["username"], email=request.form["email"])
-    u.set_password(request.form.get("password","Init123!"))
+    u.set_password(request.form.get("password", "Init123!"))
     # 默认给普通角色
     role_user = Role.query.filter_by(name="user").first()
     if role_user: u.roles.append(role_user)
-    db.session.add(u); db.session.commit()
+    db.session.add(u);
+    db.session.commit()
     return redirect(url_for("admin.users_list"))
+
 
 @admin_bp.post("/users/<int:uid>/grant")
 def grant(uid):
     u = db.session.get(User, uid)
     r = Role.query.filter_by(name=request.form["role"]).first()
     if u and r and not u.has_role(r.name):
-        u.roles.append(r); db.session.commit()
+        u.roles.append(r);
+        db.session.commit()
         flash(f"已授予用户 {u.username} {r.name} 权限", "success")
     return redirect(url_for("admin.users_list"))
 
+
 from flask import flash, redirect, url_for
+
 
 @admin_bp.post("/users/<int:uid>/revoke")
 def revoke(uid):
@@ -57,6 +66,7 @@ def revoke(uid):
         flash(f"已撤销用户 {u.username} 的 {r.name} 权限", "success")
     return redirect(url_for("admin.users_list"))
 
+
 @admin_bp.post("/users/<int:uid>/delete")
 def delete(uid):
     u = db.session.get(User, uid)
@@ -65,7 +75,7 @@ def delete(uid):
         return redirect(url_for("admin.users_list"))
 
     if u == current_user:
-        flash("不能删除自己! ",category="error")
+        flash("不能删除自己! ", category="error")
         return redirect(url_for("admin.users_list"))
 
     if u.has_role("admin"):
@@ -94,5 +104,6 @@ def delete(uid):
 def reset(uid):
     u = db.session.get(User, uid)
     if u:
-        u.set_password(request.form.get("new_password","Init123!")); db.session.commit()
+        u.set_password(request.form.get("new_password", "Init123!"));
+        db.session.commit()
     return redirect(url_for("admin.users_list"))
