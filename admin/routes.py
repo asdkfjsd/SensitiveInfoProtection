@@ -2,6 +2,7 @@ import json
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 from ext import db
 from models import User, Role, ResetToken, LoginLog
 
@@ -32,13 +33,40 @@ def users_list():
 
 @admin_bp.post("/users/create")
 def create_user():
-    u = User(username=request.form["username"], email=request.form["email"])
-    u.set_password(request.form.get("password", "Init123!"))
+    username = (request.form.get("username") or "").strip()
+    email = (request.form.get("email") or "").strip()
+    pwd = (request.form.get("password") or "Init123!").strip()
+
+    if not username or not email:
+        payload = {"ok": False, "message": "用户名和邮箱必填"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    # 唯一性校验
+    exists = User.query.filter(or_(User.username == username, User.email == email)).first()
+    if exists:
+        payload = {"ok": False, "message": "用户名或邮箱已存在"}
+        return (jsonify(payload), 409) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    u = User(username=username, email=email)
+    u.set_password(pwd)
+
     # 默认给普通角色
     role_user = Role.query.filter_by(name="user").first()
-    if role_user: u.roles.append(role_user)
-    db.session.add(u); db.session.commit()
-    return redirect(url_for("admin.users_list"))
+    if role_user:
+        u.roles.append(role_user)
+
+    db.session.add(u)
+    db.session.commit()
+
+    payload = {
+        "ok": True,
+        "message": f"User {u.username} created",
+        "id": u.id,
+        "username": u.username,
+        "email": u.email,
+        "roles": [r.name for r in u.roles],  # ← 返回字符串列表
+    }
+    return jsonify(payload) if _wants_json() else redirect(url_for("admin.users_list"))
 
 
 @admin_bp.post("/users/<int:uid>/grant")
@@ -50,7 +78,6 @@ def grant(uid):
         return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
     if u and r and not u.has_role(r.name):
         u.roles.append(r);db.session.commit()
-        #flash(f"已授予用户 {u.username} {r.name} 权限", "success")
 
     payload = {"ok": True, "message": f"已授予 {u.username} 角色 {r.name}",
                "id": u.id, "roles": [x.name for x in u.roles]}
