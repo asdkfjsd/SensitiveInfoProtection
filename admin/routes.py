@@ -37,8 +37,7 @@ def create_user():
     # 默认给普通角色
     role_user = Role.query.filter_by(name="user").first()
     if role_user: u.roles.append(role_user)
-    db.session.add(u);
-    db.session.commit()
+    db.session.add(u); db.session.commit()
     return redirect(url_for("admin.users_list"))
 
 
