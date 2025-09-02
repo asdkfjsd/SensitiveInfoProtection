@@ -54,14 +54,14 @@
         </header>
 
         <!-- 仅做一次的全局提示（可选） -->
-        {% with msgs = get_flashed_messages() %}
-            {% if msgs %}
-                <ul style="margin: 10px 0 20px; color:#c00;">
-                    {% for m in msgs %}
-                        <li>{{ m }}</li>{% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
+{#        {% with msgs = get_flashed_messages() %}#}
+{#            {% if msgs %}#}
+{#                <ul style="margin: 10px 0 20px; color:#c00;">#}
+{#                    {% for m in msgs %}#}
+{#                        <li>{{ m }}</li>{% endfor %}#}
+{#                </ul>#}
+{#            {% endif %}#}
+{#        {% endwith %}#}
 
         <!-- ========== 个人中心（所有用户可见） ========== -->
         <section class="data-section" style="margin-top:10px;">

@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import json
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from ext import db
 from models import User, Role, ResetToken, LoginLog
@@ -9,6 +11,10 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 def require_admin():
     return current_user.is_authenticated and current_user.has_role("admin")
 
+def _wants_json():
+    # 前端 fetch 会带这个头；也兼容 Accept: application/json
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest" or \
+           request.accept_mimetypes.best == "application/json"
 
 @admin_bp.before_request
 def guard():
@@ -40,70 +46,84 @@ def create_user():
 def grant(uid):
     u = db.session.get(User, uid)
     r = Role.query.filter_by(name=request.form["role"]).first()
+    if not u or not r:
+        payload = {"ok": False, "message": "User not found"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
     if u and r and not u.has_role(r.name):
-        u.roles.append(r);
-        db.session.commit()
-        flash(f"已授予用户 {u.username} {r.name} 权限", "success")
-    return redirect(url_for("admin.users_list"))
+        u.roles.append(r);db.session.commit()
+        #flash(f"已授予用户 {u.username} {r.name} 权限", "success")
 
-
-from flask import flash, redirect, url_for
+    payload = {"ok": True, "message": f"已授予 {u.username} 角色 {r.name}",
+               "id": u.id, "roles": [x.name for x in u.roles]}
+    return jsonify(payload) if _wants_json() else redirect(url_for("admin.users_list"))
 
 
 @admin_bp.post("/users/<int:uid>/revoke")
 def revoke(uid):
     u = db.session.get(User, uid)
-    # 自己撤自己 → 拦截并提示
-    if u == current_user:
-        flash("不能撤销自己的权限！", "error")
-        return redirect(url_for("admin.users_list"))
-
     r = Role.query.filter_by(name=request.form["role"]).first()
-    if u and r:
-        # 从用户角色列表中剔除目标角色
-        u.roles = [x for x in u.roles if x.id != r.id]
-        db.session.commit()
-        flash(f"已撤销用户 {u.username} 的 {r.name} 权限", "success")
-    return redirect(url_for("admin.users_list"))
+    if not u or not r:
+        payload = {"ok": False, "message": "用户或角色不存在"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+        # 不能撤销自己 & 不能撤掉系统最后一个 admin
+    if u == current_user:
+        payload = {"ok": False, "message": "不能撤销自己的权限"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    if r.name == "admin" and u.has_role("admin"):
+        admin_count = User.query.join(User.roles).filter(Role.name == "admin").count()
+        if admin_count <= 1:
+            payload = {"ok": False, "message": "系统至少保留一名管理员"}
+            return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    u.roles = [x for x in u.roles if x.id != r.id]
+    db.session.commit()
+    payload = {"ok": True, "message": f"已撤销 {u.username} 的 {r.name}",
+               "id": u.id, "roles": [x.name for x in u.roles]}
+    return jsonify(payload) if _wants_json() else redirect(url_for("admin.users_list"))
 
 
 @admin_bp.post("/users/<int:uid>/delete")
 def delete(uid):
     u = db.session.get(User, uid)
     if not u:
-        flash("目标用户不存在。", "error")
-        return redirect(url_for("admin.users_list"))
+        payload = {"ok": False, "message": "用户不存在"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
 
     if u == current_user:
-        flash("不能删除自己! ", category="error")
-        return redirect(url_for("admin.users_list"))
+        payload = {"ok": False, "message": "不能删除自己"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
 
     if u.has_role("admin"):
-        admin_count = (
-            User.query.join(User.roles)
-            .filter(Role.name == "admin")
-            .count()
-        )
+        admin_count = User.query.join(User.roles).filter(Role.name == "admin").count()
         if admin_count <= 1:
-            flash("系统至少保留一名管理员，删除被阻止。", "error")
-            return redirect(url_for("admin.users_list"))
+            payload = {"ok": False, "message": "系统至少保留一名管理员"}
+            return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
 
-    username = u.username  # 放到成功拿到 u 之后
-    # —— 清理关联，避免外键约束问题（视你的级联配置而定）——
-    u.roles.clear()  # 清 user↔role 关联行
-    ResetToken.query.filter_by(user_id=uid).delete()  # 如果你不需要保留历史
-    LoginLog.query.filter_by(user_id=uid).delete()  # 或者选择置空外键（看模型设计）
-
-    db.session.delete(u)
+    username = u.username
+    u.roles.clear()
+    ResetToken.query.filter_by(user_id=uid).delete()
+    LoginLog.query.filter_by(user_id=uid).delete()
+    db.session.delete(u);
     db.session.commit()
-    flash(f"已删除用户 {username}！", "success")
-    return redirect(url_for("admin.users_list"))
+
+    payload = {"ok": True, "message": f"已删除用户 {username}", "id": uid}
+    return jsonify(payload) if _wants_json() else redirect(url_for("admin.users_list"))
 
 
 @admin_bp.post("/users/<int:uid>/reset-password")
 def reset(uid):
     u = db.session.get(User, uid)
-    if u:
-        u.set_password(request.form.get("new_password", "Init123!"));
-        db.session.commit()
-    return redirect(url_for("admin.users_list"))
+    if not u:
+        payload = {"ok": False, "message": "用户不存在"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    new_pwd = request.form.get("new_password", "").strip()
+    if not new_pwd:
+        payload = {"ok": False, "message": "新密码不能为空"}
+        return (jsonify(payload), 400) if _wants_json() else redirect(url_for("admin.users_list"))
+
+    u.set_password(new_pwd); db.session.commit()
+    payload = {"ok": True, "message": f"已重置 {u.username} 的密码", "id": u.id}
+    return jsonify(payload) if _wants_json() else redirect(url_for("admin.users_list"))
